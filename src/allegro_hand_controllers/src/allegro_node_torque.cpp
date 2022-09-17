@@ -1,6 +1,6 @@
 using namespace std;
 
-#include "allegro_node_torque.h"
+#include "allegro_hand_controllers/allegro_node_torque.h"
 #include <stdio.h>
 
 #include "ros/ros.h"

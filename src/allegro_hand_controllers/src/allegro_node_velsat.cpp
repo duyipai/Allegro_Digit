@@ -7,7 +7,7 @@
 //////////////////////////////////////////////////////
 
 #include "ros/ros.h"
-#include "allegro_node_velsat.h"
+#include "allegro_hand_controllers/allegro_node_velsat.h"
 
 // Topics
 const std::string JOINT_DESIRED_TOPIC = "allegroHand/joint_desired_states";

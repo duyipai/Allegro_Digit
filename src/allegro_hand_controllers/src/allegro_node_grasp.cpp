@@ -1,4 +1,4 @@
-#include "allegro_node_grasp.h"
+#include "allegro_hand_controllers/allegro_node_grasp.h"
 
 #include "bhand/BHand.h"
 

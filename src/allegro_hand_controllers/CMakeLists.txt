@@ -19,8 +19,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## catkin specific configuration ##
 ###################################
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES allegro_hand_controllers
+  INCLUDE_DIRS include
+  LIBRARIES allegro_hand_controllers
   CATKIN_DEPENDS allegro_hand_driver bhand libpcan roscpp sensor_msgs
 #  DEPENDS
 )
@@ -30,6 +30,7 @@ catkin_package(
 ###########
 
 include_directories(
+  include
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -67,6 +68,12 @@ install(TARGETS
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+## Mark cpp header files for installation
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.h"
 )
 
 ## Install launch files
