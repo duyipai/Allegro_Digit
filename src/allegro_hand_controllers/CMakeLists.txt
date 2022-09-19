@@ -20,7 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
 ###################################
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES allegro_hand_controllers
+  LIBRARIES allegro_node
   CATKIN_DEPENDS allegro_hand_driver bhand libpcan roscpp sensor_msgs
 #  DEPENDS
 )
