@@ -7,7 +7,7 @@ This is from the official allegro hand ros package [1].
 
 [1] https://github.com/simlabrobotics/allegro_hand_ros_v4
 
-It simplifies the launch file structure, seperating the low level PD controller and the control logic by introducing a DesiredJointStatePub node that implements the high level control. It is also made to be compatiable with ROS neotic.
+It simplifies the launch file structure, seperating the low level PD controller and the control logic by introducing a DesiredJointStatePub node that implements the high level control. It is also made to be compatiable with ROS noetic.
 
 It also requires the BHand library installed [2].
 
@@ -41,7 +41,7 @@ a peak-systems pcan to usb adapter.
 
 1. Install these packages
 
-    sudo apt-get install libpopt-dev ros-neotic-libpcan
+    sudo apt-get install libpopt-dev ros-noetic-libpcan
 
 2. Download latest drivers: http://www.peak-system.com/fileadmin/media/linux/index.htm#download
 
