@@ -63,13 +63,14 @@ available interfaces:
     ls -l /dev/pcan*
 
 
-3. Build the sources
+3.
+Build the sources:
 
-    catkin_make
-    
+    catkin_make    
     source devel/setup.bash
 
-4. quick start
+4. 
+quick start:
 
     roslaunch allegro_hand allegro_hand.launch
 
