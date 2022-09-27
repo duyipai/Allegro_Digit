@@ -4,7 +4,7 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/opt/ros/kinetic/include/**"
+                "/opt/ros/noetic/include/**"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
