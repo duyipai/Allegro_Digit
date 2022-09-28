@@ -38,6 +38,9 @@ class AllegroNodePD : virtual public AllegroNode {
   BHand *pBHand = NULL;
 
    double desired_position[DOF_JOINTS] = {0.0};
+   double FK_x[4] = {0.0};
+   double FK_y[4] = {0.0};
+   double FK_z[4] = {0.0};
 };
 
 #endif  // __ALLEGRO_HAND_JOINT_PD_H__

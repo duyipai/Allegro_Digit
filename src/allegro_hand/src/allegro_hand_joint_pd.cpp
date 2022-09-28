@@ -120,6 +120,8 @@ void AllegroNodePD::computeDesiredTorque() {
   }
 
   pBHand->SetJointPosition(current_position_filtered);
+  pBHand->GetFKResult(FK_x, FK_y, FK_z);
+  // ROS_INFO("FK_x: %f %f %f %f, FK_y: %f %f %f %f, FK_z: %f %f %f %f", FK_x[0], FK_x[1], FK_x[2], FK_x[3], FK_y[0], FK_y[1], FK_y[2], FK_y[3], FK_z[0], FK_z[1], FK_z[2], FK_z[3]);
   {
     mutex->lock();
 

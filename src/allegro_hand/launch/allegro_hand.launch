@@ -33,8 +33,21 @@
   <arg name="SIM" default="false"/>
   <arg name="KEYBOARD" default="true" />
 
+
+  <arg name="DIGIT" default="true" />
+    <include file="$(find digit)/launch/digit.launch"
+           if="$(arg DIGIT)">
+    <arg name="VISUALIZE" value="true"/>
+  </include>
+
   <!-- Use the joint_state_publisher for *commanded* joint angles. -->
   <arg name="JSP_GUI" default="false"/>
+    <!-- NOTE: The joint_state_publisher is actually commanding *desired* joint
+       angles. You can set 'SIM' to "true" to have a non-existent hand. -->
+  <node name="joint_states_$(arg NUM)" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui"
+        if="$(arg JSP_GUI)">
+    <remap from="joint_states" to="allegroHand_$(arg NUM)/joint_cmd"/>
+  </node>
 
   <!-- Visualization with rviz, only if arg VISUALIZE is set to true. Default is
        false, the allegro_viz.launch can be started separated. -->
@@ -120,13 +133,6 @@
         output="screen"
         if="$(arg KEYBOARD)">
     <remap from="allegroHand/lib_cmd" to="allegroHand_$(arg NUM)/lib_cmd"/>
-  </node>
-  <!-- NOTE: The joint_state_publisher is actually commanding *desired* joint
-       angles. You can set 'SIM' to "true" to have a non-existent hand. -->
-  <node name="joint_states_$(arg NUM)" pkg="joint_state_publisher" type="joint_state_publisher"
-        if="$(arg JSP_GUI)">
-    <remap from="joint_states" to="allegroHand_$(arg NUM)/joint_cmd"/>
-    <param name="use_gui" value="true"/>
   </node>
 
   <!-- Joint States (angles) to Joint Transforms -->

@@ -38,7 +38,7 @@ if __name__ == "__main__":
         mean=mean,
         std=std,
         use_cuda=device == "cuda",
-        optimize=device != "cuda",
+        optimize=False,
     )
 
     if use_compressed:

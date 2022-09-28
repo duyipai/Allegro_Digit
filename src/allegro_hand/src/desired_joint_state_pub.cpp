@@ -12,6 +12,11 @@ double home_pose[DOF_JOINTS] =
         };
 
 double zero_torque[DOF_JOINTS] ={0.0};
+double pre_grasp[DOF_JOINTS] = {0.0, 0.0, 0.0, 0.0, 0.3, 1.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.4, 0.0, 0.9, -0.16};
+double grasp[DOF_JOINTS] = {0.0, 0.0, 0.0, 0.0, 0.3, 1.6, 0.0, 0.4, 0.0, 0.0, 0.0, 0.0, 1.4, 0.0, 0.9, -0.16};
+double roll1[DOF_JOINTS] = {0.0, 0.0, 0.0, 0.0, 0.3, 1.6, 0.0, -0.1, 0.0, 0.0, 0.0, 0.0, 1.4, 0.0, 0.9, -0.16};
+double roll2[DOF_JOINTS] = {0.0, 0.0, 0.0, 0.0, 0.3, 1.6, 0.0, 0.6, 0.0, 0.0, 0.0, 0.0, 1.4, 0.0, 0.9, -0.16};
+int status = 0;
 
 DesiredJointStatePub::DesiredJointStatePub()
 {
@@ -36,7 +41,32 @@ void DesiredJointStatePub::cmdCallback(const std_msgs::String::ConstPtr &msg) {
 
   if (lib_cmd.compare("pdControl") == 0) {
     // Desired position only necessary if in PD Control mode
-    publishDesiredJointState(saved_position, false);
+    // publishDesiredJointState(saved_position, false);
+    switch (status) {
+      case 0:
+        publishDesiredJointState(home_pose, false);
+        status += 1;
+        break;
+      case 1:
+        publishDesiredJointState(pre_grasp, false);
+        status += 1;
+        break;
+      case 2:
+        publishDesiredJointState(grasp, false);
+        status += 1;
+        break;
+      case 3:
+        publishDesiredJointState(roll1, false);
+        status += 1;
+        break;
+      case 4:
+        publishDesiredJointState(roll2, false);
+        status -= 1;
+        break;
+      default:
+        ROS_ERROR("CTRL: Invalid status of %d", status);
+        break;
+    }
   } else if (lib_cmd.compare("save") == 0) {
     mutex->lock();
     for (int i = 0; i < DOF_JOINTS; i++)
@@ -46,6 +76,7 @@ void DesiredJointStatePub::cmdCallback(const std_msgs::String::ConstPtr &msg) {
     publishDesiredJointState(zero_torque, true);
   } else if (lib_cmd.compare("home") == 0) {
     publishDesiredJointState(home_pose, false);
+    status = 1;
   } else {
     ROS_WARN("Unknown commanded grasp: %s.", lib_cmd.c_str());
     return;
