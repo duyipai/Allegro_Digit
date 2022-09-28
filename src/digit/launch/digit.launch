@@ -13,6 +13,7 @@
   <arg name="SCALE" default="1.0" />
   <arg name="MMPP" default="0.0487334006" />
   <arg name="COMPRESS" default="true" />
+  <arg name="PCA" default="True" />
 
   <!-- Allegro Hand controller and communication node. -->
   <node name="digit_$(arg NUM)"
@@ -33,6 +34,7 @@
     <param name="scale" value="$(arg SCALE)"/>
     <param name="mmpp" value="$(arg MMPP)"/>
     <param name="visualize" value="$(arg VISUALIZE)"/>
+    <param name="do_pca" value="$(arg PCA)"/>
   </node>
 
 </launch>
