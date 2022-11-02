@@ -6,14 +6,15 @@
   
   <arg name="NUM" default="0"/>
   <arg name="SERIAL" default="D20387"/>
-  <!-- Visualization with rviz, only if arg VISUALIZE is set to true. Default is
+  <!-- Visualization with openCV, only if arg VISUALIZE is set to true. Default is
        false, the allegro_viz.launch can be started separated. -->
-  <arg name ="VISUALIZE" default="false" />
+  <arg name ="VISUALIZE" default="true" />
+  <arg name = "DEPTH" default="false"/>
   <arg name="GPU" default="false" />
   <arg name="SCALE" default="1.0" />
   <arg name="MMPP" default="0.0487334006" />
-  <arg name="COMPRESS" default="true" />
-  <arg name="PCA" default="True" />
+  <arg name="COMPRESS" default="false" />
+  <arg name="PCA" default="false" />
 
   <!-- Allegro Hand controller and communication node. -->
   <node name="digit_$(arg NUM)"
@@ -28,6 +29,8 @@
     <remap from="digit_sensor/diff/compressed" to="digit_sensor/$(arg NUM)/diff/compressed" if="$(arg COMPRESS)"/>
     <remap from="digit_sensor/depth" to="digit_sensor/$(arg NUM)/depth"/>
 
+    <param name="calculate_depth" value="$(arg DEPTH)"/>
+    <param name="use_compressed" value="$(arg COMPRESS)"/>
     <param name="model_path" value="$(find digit)/data/digit_nn_normalized"/>
     <param name="serial" value="$(arg SERIAL)"/>
     <param name="use_gpu" value="$(arg GPU)"/>
