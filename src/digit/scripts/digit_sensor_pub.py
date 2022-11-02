@@ -2,7 +2,6 @@
 from math import acos, pi
 
 import cv2
-import numba
 import numpy as np
 import pytact
 import rospy
