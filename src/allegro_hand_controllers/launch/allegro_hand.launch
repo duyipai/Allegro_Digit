@@ -118,12 +118,10 @@
     <param name="/hand_info/which_hand" value="$(arg HAND)" /> <!-- See HAND arg above -->
   </node>
 
-  <!-- NOTE: The joint_state_publisher is actually commanding *desired* joint
-       angles. You can use the 'sim' controller to have a non-existent hand. -->
-  <node name="joint_states_$(arg NUM)" pkg="joint_state_publisher" type="joint_state_publisher"
+
+  <node name="joint_states_$(arg NUM)" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui"
         if="$(arg JSP_GUI)">
     <remap from="joint_states" to="allegroHand_$(arg NUM)/joint_cmd"/>
-    <param name="use_gui" value="true"/>
   </node>
 
   <!-- Joint States (angles) to Joint Transforms -->

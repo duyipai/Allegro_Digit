@@ -2,7 +2,7 @@
 <package>
     <name>allegro_hand</name>
     <version>2.0.1</version>
-    <description>Custom allegro_hand package to control the hand, inherited from the original source code. It is follows the sample controllers in allegro_hand_controlls package.</description>
+    <description>In hand manipulation using Allegro hand and digit tactile sensor.</description>
 
     <maintainer email="yipai.du@outlook.com">Yipai Du</maintainer>
 
@@ -17,6 +17,7 @@
     <build_depend>libpcan</build_depend>
     <build_depend>roscpp</build_depend>
     <build_depend>sensor_msgs</build_depend>
+    <build_depend>rospy</build_depend>
     <run_depend>allegro_hand_controllers</run_depend>
     <run_depend>allegro_hand_description</run_depend>
     <run_depend>allegro_hand_driver</run_depend>
@@ -28,6 +29,7 @@
     <run_depend>roscpp</run_depend>
     <run_depend>sensor_msgs</run_depend>
     <run_depend>xacro</run_depend>
+    <run_depend>rospy</run_depend>
 
     <!-- The export tag contains other, unspecified, tags -->
     <export>

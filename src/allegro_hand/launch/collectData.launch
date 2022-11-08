@@ -7,12 +7,9 @@
           ZEROS:=/path/to/zeros_file.yaml
           CONTROLLER:=grasp|pd|velsat|torque
           RESPAWN:=true|false   Respawn controller if it dies.
-          KEYBOARD:=true|false  (default is true)
           AUTO_CAN:=true|false  (if true, ignores CAN_DEVICE argument and finds the can device automagically).
           CAN_DEVICE:=/dev/pcanusb1 | /dev/pcanusbNNN  (ls -l /dev/pcan* to see open CAN devices)
-          VISUALIZE:=true|false  (Launch rviz)
           JSP_GUI:=true|false  (If true, start a joint_state_publisher for commanded joint angles).
-          GAZEBO:=true|false  (NOTE: Gazebo support is highly experimental at this point)
 
        This script launches the following nodes:
          - allegro hand controller (different controllers exist)
@@ -29,33 +26,19 @@
        as an input for both the robot_description and for the grasping library controllers. -->
   <arg name="HAND" default="right"/>
   <arg name="NUM" default="0"/>
-  <arg name="GAZEBO" default="false"/>
-  <arg name="KEYBOARD" default="true" />
-
-
-  <arg name="DIGIT" default="true" />
-    <include file="$(find digit)/launch/digit.launch"
-           if="$(arg DIGIT)">
-    <arg name="VISUALIZE" value="true"/>
+<!--
+  <include file="$(find digit)/launch/digit.launch">
+     <arg name="VISUALIZE" value="false"/>
+     <arg name="NUM" default="0"/>
+     <arg name="SERIAL" default="D20387"/>
   </include>
-
-  <!-- Use the joint_state_publisher for *commanded* joint angles. -->
-  <arg name="JSP_GUI" default="false"/>
-    <!-- NOTE: The joint_state_publisher is actually commanding *desired* joint
-       angles. -->
-  <node name="joint_states_$(arg NUM)" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui"
-        if="$(arg JSP_GUI)">
-    <remap from="joint_states" to="allegroHand_$(arg NUM)/joint_cmd"/>
-  </node>
-
-  <!-- Visualization with rviz, only if arg VISUALIZE is set to true. Default is
-       false, the allegro_viz.launch can be started separated. -->
-  <arg name ="VISUALIZE" default="true" />
-  <include file="$(find allegro_hand_controllers)/launch/allegro_viz.launch"
-           if="$(arg VISUALIZE)">
-    <arg name="NUM" value="$(arg NUM)"/>
+ 
+  <include file="$(find digit)/launch/digit.launch">
+  <arg name="VISUALIZE" value="false"/>
+  <arg name="NUM" default="1"/>
+  <arg name="SERIAL" default="D20580"/>
   </include>
-
+ -->
   <!-- ls -l /dev/pcan* to see your open CAN ports. Auto means find it
        automatically, and ignores the CAN_DEVICE argument. -->
   <arg name="AUTO_CAN" default="true" />
@@ -107,30 +90,6 @@
            if="$(arg AUTO_CAN)" />
 
     <param name="/hand_info/which_hand" value="$(arg HAND)" /> <!-- See HAND arg above -->
-  </node>
-
-  <!-- Allegro Hand command logic node. -->
-  <node name="allegro_commander_$(arg HAND)_$(arg NUM)"
-        pkg="allegro_hand"
-        type="desired_joint_state_pub"
-        output="screen"
-        clear_params="true"
-        respawn="$(arg RESPAWN)"
-        respawn_delay="2">
-
-    <!-- Remapping of topics into enumerated allegroHand_# namespace -->
-    <remap from="allegroHand/joint_states" to="allegroHand_$(arg NUM)/joint_states"/>
-    <remap from="allegroHand/joint_cmd" to="allegroHand_$(arg NUM)/joint_cmd"/>
-    <remap from="allegroHand/lib_cmd" to="allegroHand_$(arg NUM)/lib_cmd"/>
-  </node>
-
-    <!-- Keyboard handler (if arg KEYBOARD is true) -->
-  <node name="keyboard_$(arg NUM)"
-        pkg="allegro_hand_keyboard"
-        type="allegro_hand_keyboard"
-        output="screen"
-        if="$(arg KEYBOARD)">
-    <remap from="allegroHand/lib_cmd" to="allegroHand_$(arg NUM)/lib_cmd"/>
   </node>
 
   <!-- Joint States (angles) to Joint Transforms -->
