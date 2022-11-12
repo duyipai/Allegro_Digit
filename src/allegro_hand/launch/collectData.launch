@@ -5,7 +5,6 @@
        Suggested arguments:
           NUM:=0|1|...
           ZEROS:=/path/to/zeros_file.yaml
-          CONTROLLER:=grasp|pd|velsat|torque
           RESPAWN:=true|false   Respawn controller if it dies.
           AUTO_CAN:=true|false  (if true, ignores CAN_DEVICE argument and finds the can device automagically).
           CAN_DEVICE:=/dev/pcanusb1 | /dev/pcanusbNNN  (ls -l /dev/pcan* to see open CAN devices)
@@ -76,8 +75,6 @@
     <rosparam file="$(arg ZEROS)" command="load" />
 
     <rosparam file="$(arg PARAMS_DIR)/gains_pd.yaml" command="load" />
-    <rosparam file="$(arg PARAMS_DIR)/gains_velSat.yaml" command="load" />
-    <rosparam file="$(arg PARAMS_DIR)/initial_position.yaml" command="load" />
 
     <!-- Set the CAN channel automatically (using detect_pcan.py) if the
          AUTO_CAN parameter is true, otherwise use the CAN_DEVICE

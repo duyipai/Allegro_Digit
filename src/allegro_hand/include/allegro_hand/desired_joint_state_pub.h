@@ -43,8 +43,6 @@ class DesiredJointStatePub{
 
   boost::mutex *mutex;
 
-  double resulting_torque[DOF_JOINTS] = {0.0};
-
 };
 
 #endif  // __DESIRED_JOINT_STATE_PUB_H__

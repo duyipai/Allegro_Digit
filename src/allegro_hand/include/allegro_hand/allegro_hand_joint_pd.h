@@ -36,7 +36,9 @@ class AllegroNodePD : virtual public AllegroNode {
   bool control_hand_ = false;
 
   BHand *pBHand = NULL;
+  BHand *pBHandGvComp = NULL;
 
+   double gravity_compensation_torque[DOF_JOINTS] = {0.0};
    double desired_position[DOF_JOINTS] = {0.0};
    double FK_x[4] = {0.0};
    double FK_y[4] = {0.0};

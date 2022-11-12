@@ -9,26 +9,13 @@ using namespace std;
 #define DEGREES_TO_RADIANS(angle) ((angle) / 180.0 * M_PI)
 
 // Default parameters.
-double k_p[DOF_JOINTS] =
-        {
-                // Default P Gains for PD Controller, loaded if
-                // 'gains_pd.yaml' file is not loaded.
-                600.0, 600.0, 600.0, 1000.0, 600.0, 600.0, 600.0, 1000.0,
-                600.0, 600.0, 600.0, 1000.0, 1000.0, 1000.0, 1000.0, 600.0
-        };
+double k_p[DOF_JOINTS] ={0.0};
 
-double k_d[DOF_JOINTS] =
-        {
-                // Default D Gains for PD Controller, loaded if
-                // 'gains_pd.yaml' file is not loaded.
-                15.0, 20.0, 15.0, 15.0, 15.0, 20.0, 15.0, 15.0,
-                15.0, 20.0, 15.0, 15.0, 30.0, 20.0, 20.0, 15.0
-        };
+double k_d[DOF_JOINTS] ={0.0};
 
 double home_pose[DOF_JOINTS] =
         {
-                // Default (HOME) position (degrees), set at system start if
-                // no 'initial_position.yaml' parameter is loaded.
+                // Default (HOME) position (degrees)
                 0.0, -10.0, 45.0, 45.0,  0.0, -10.0, 45.0, 45.0,
                 5.0, -5.0, 50.0, 45.0, 60.0, 25.0, 15.0, 45.0
         };
@@ -57,22 +44,6 @@ std::string dGainParams[DOF_JOINTS] =
                 "~gains_pd/d/j33"
         };
 
-std::string initialPosition[DOF_JOINTS] =
-        {
-                "~initial_position/j00", "~initial_position/j01",
-                "~initial_position/j02",
-                "~initial_position/j03",
-                "~initial_position/j10", "~initial_position/j11",
-                "~initial_position/j12",
-                "~initial_position/j13",
-                "~initial_position/j20", "~initial_position/j21",
-                "~initial_position/j22",
-                "~initial_position/j23",
-                "~initial_position/j30", "~initial_position/j31",
-                "~initial_position/j32",
-                "~initial_position/j33"
-        };
-
 // Constructor subscribes to topics.
 AllegroNodePD::AllegroNodePD()
         : AllegroNode() {
@@ -86,6 +57,9 @@ AllegroNodePD::~AllegroNodePD() {
   ROS_INFO("PD controller node is shutting down");
   if (pBHand != NULL) {
     delete pBHand;
+  }
+  if (pBHandGvComp != NULL) {
+    delete pBHandGvComp;
   }
 }
 
@@ -120,7 +94,8 @@ void AllegroNodePD::computeDesiredTorque() {
   }
 
   pBHand->SetJointPosition(current_position_filtered);
-  pBHand->GetFKResult(FK_x, FK_y, FK_z);
+  // pBHand->GetFKResult(FK_x, FK_y, FK_z);
+  pBHandGvComp->SetJointPosition(current_position_filtered);
   // ROS_INFO("FK_x: %f %f %f %f, FK_y: %f %f %f %f, FK_z: %f %f %f %f", FK_x[0], FK_x[1], FK_x[2], FK_x[3], FK_y[0], FK_y[1], FK_y[2], FK_y[3], FK_z[0], FK_z[1], FK_z[2], FK_z[3]);
   {
     mutex->lock();
@@ -133,6 +108,11 @@ void AllegroNodePD::computeDesiredTorque() {
       pBHand->SetJointDesiredPosition(desired_position);
       pBHand->UpdateControl((double)frame * ALLEGRO_CONTROL_TIME_INTERVAL);
       pBHand->GetJointTorque(desired_torque);
+      pBHandGvComp->UpdateControl((double)frame * ALLEGRO_CONTROL_TIME_INTERVAL);
+      pBHandGvComp->GetJointTorque(gravity_compensation_torque);
+      for (int i = 0; i < DOF_JOINTS; i++) {
+        desired_torque[i] = desired_torque[i] + gravity_compensation_torque[i];
+      }
     }
     else if (desired_joint_state.effort.size() > 0)
     {
@@ -151,14 +131,18 @@ void AllegroNodePD::initController(const std::string &whichHand) {
   // Initialize BHand controller
   if (whichHand.compare("left") == 0) {
     pBHand = new BHand(eHandType_Left);
+    pBHandGvComp = new BHand(eHandType_Left);
     ROS_WARN("CTRL: Left Allegro Hand controller initialized.");
   }
   else {
     pBHand = new BHand(eHandType_Right);
+    pBHandGvComp = new BHand(eHandType_Right);
     ROS_WARN("CTRL: Right Allegro Hand controller initialized.");
   }
   pBHand->SetTimeInterval(ALLEGRO_CONTROL_TIME_INTERVAL);
   pBHand->SetMotionType(eMotionType_JOINT_PD);
+  pBHandGvComp->SetTimeInterval(ALLEGRO_CONTROL_TIME_INTERVAL);
+  pBHandGvComp->SetMotionType(eMotionType_GRAVITY_COMP);
   // set gains_pd via gains_pd.yaml or to default values
   if (ros::param::has("~gains_pd")) {
     ROS_INFO("CTRL: PD gains loaded from param server.");
@@ -166,37 +150,15 @@ void AllegroNodePD::initController(const std::string &whichHand) {
       ros::param::get(pGainParams[i], k_p[i]);
       ros::param::get(dGainParams[i], k_d[i]);
     }
+    pBHand->SetGainsEx(k_p, k_d);
   }
   else {
-    // gains will be loaded every control iteration
+    // default BHand gains will be used
     ROS_WARN("CTRL: PD gains not loaded");
     ROS_WARN("Check launch file is loading /parameters/gains_pd.yaml");
-    ROS_WARN("Loading default PD gains...");
+    ROS_WARN("Using default BHand PD gains...");
   }
-  // set initial position via initial_position.yaml or to default values
-  if (ros::param::has("~initial_position")) {
-    ROS_INFO("CTRL: Initial Pose loaded from param server.");
-    double tmp;
-    mutex->lock();
-    desired_joint_state.position.resize(DOF_JOINTS);
-    for (int i = 0; i < DOF_JOINTS; i++) {
-      ros::param::get(initialPosition[i], tmp);
-      desired_joint_state.position[i] = DEGREES_TO_RADIANS(tmp);
-    }
-    mutex->unlock();
-  }
-  else {
-    ROS_WARN("CTRL: Initial position not loaded.");
-    ROS_WARN("Check launch file is loading /parameters/initial_position.yaml");
-    ROS_WARN("Loading Home position instead...");
 
-    // Home position
-    mutex->lock();
-    desired_joint_state.position.resize(DOF_JOINTS);
-    for (int i = 0; i < DOF_JOINTS; i++)
-      desired_joint_state.position[i] = DEGREES_TO_RADIANS(home_pose[i]);
-    mutex->unlock();
-  }
   control_hand_ = false;
 
   printf("*************************************\n");

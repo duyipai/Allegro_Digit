@@ -21,7 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
 ###################################
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES allegro_hand_joint_pd allegro_hand_sim desired_joint_state_pub
+  LIBRARIES allegro_hand_joint_pd desired_joint_state_pub
   CATKIN_DEPENDS allegro_hand_controllers allegro_hand_driver bhand libpcan roscpp sensor_msgs
 #  DEPENDS
 )
@@ -39,10 +39,8 @@ include_directories(
 
 add_library(allegro_hand_joint_pd src/allegro_hand_joint_pd.cpp)
 
-add_library(allegro_hand_sim src/allegro_hand_sim.cpp)
-
 add_executable(allegro_hand_node src/allegro_hand_node.cpp)
-target_link_libraries(allegro_hand_node allegro_hand_joint_pd allegro_hand_sim ${catkin_LIBRARIES})
+target_link_libraries(allegro_hand_node allegro_hand_joint_pd ${catkin_LIBRARIES})
 
 add_executable(desired_joint_state_pub src/desired_joint_state_pub.cpp)
 target_link_libraries(desired_joint_state_pub ${catkin_LIBRARIES})
@@ -56,7 +54,6 @@ target_link_libraries(desired_joint_state_pub ${catkin_LIBRARIES})
 
 install(TARGETS
   allegro_hand_joint_pd
-  allegro_hand_sim
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

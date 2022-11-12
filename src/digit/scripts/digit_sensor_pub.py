@@ -184,8 +184,7 @@ if __name__ == "__main__":
         diff_pub = rospy.Publisher(DIFF_TOPIC, Image, queue_size=1)
     if calculate_depth:
         depth_pub = rospy.Publisher(DEPTH_TOPIC, numpy_msg(Floats), queue_size=1)
-        depth_range = 0.0004
-        depth_bias = 0.0002
+        depth_range = 0.003
 
     median_filter = frameMedianFilter(sensor.get_frame())
     if sensor.is_running():
@@ -218,7 +217,7 @@ if __name__ == "__main__":
                     pose_estimator.get_pose(depth.data, frame.image)
                     f = pose_estimator.frame
 
-                depth_pub.publish(depth.data)
+                depth_pub.publish(depth.data.astype(np.float32).flatten())
 
             raw_msg = (
                 bridge.cv2_to_compressed_imgmsg(f, dst_format="jpg")
