@@ -452,7 +452,12 @@
               izz="1e-4"/>
         </inertial>
     </link>
-
+    <link name="dummy">
+    </link>
+    <joint name="dummy_joint" type="fixed">
+     <parent link="dummy"/>
+     <child link="palm_link"/>
+   </joint>
     <!-- ============================================================================= -->
     <!-- FINGERS -->
     <!-- RIGHT HAND due to which finger is number 0 -->
