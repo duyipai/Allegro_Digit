@@ -8,8 +8,10 @@ import numpy as np
 
 
 class IKSolver:
-    def __init__(self, base_link, tip_link, timeout=1.0):
-        self.ik_solver = IK(base_link, tip_link, timeout=timeout)
+    def __init__(self, base_link, tip_link, timeout=0.01):
+        self.ik_solver = IK(
+            base_link, tip_link, timeout=timeout, solve_type="Manipulation2"
+        )
         print("IK Solver initialized")
         print("Joint limits for ", tip_link, self.ik_solver.get_joint_limits())
 
@@ -37,10 +39,10 @@ class IKSolver:
                 pose[0],
                 pose[1],
                 pose[2],
-                pose[3],
                 pose[4],
                 pose[5],
                 pose[6],
+                pose[3],  # note the order of the quaternion is non-ordinary in kinpy!
                 tolerance[0],
                 tolerance[1],
                 tolerance[2],
@@ -73,9 +75,6 @@ class FKSolver:
             self.states[self.joints[i]] = q[i]
         transforms = self.chain.forward_kinematics(self.states)
         result = transforms[self.base_link].inverse() * transforms[self.tip_link]
-        result.rot = np.roll(
-            result.rot, -1
-        )  # note the order of the quaternion is non-ordinary in kinpy!
         return result
 
 

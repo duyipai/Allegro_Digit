@@ -25,11 +25,12 @@
        as an input for both the robot_description and for the grasping library controllers. -->
   <arg name="HAND" default="right"/>
   <arg name="NUM" default="0"/>
-<!--
+
   <include file="$(find digit)/launch/digit.launch">
      <arg name="VISUALIZE" value="false"/>
      <arg name="NUM" default="0"/>
-     <arg name="SERIAL" default="D20387"/>
+     <arg name="SERIAL" default="D20396"/>
+     <arg name="DEPTH" value="true"/>
   </include>
  
   <include file="$(find digit)/launch/digit.launch">
@@ -37,7 +38,8 @@
   <arg name="NUM" default="1"/>
   <arg name="SERIAL" default="D20580"/>
   </include>
- -->
+
+
   <!-- ls -l /dev/pcan* to see your open CAN ports. Auto means find it
        automatically, and ignores the CAN_DEVICE argument. -->
   <arg name="AUTO_CAN" default="true" />

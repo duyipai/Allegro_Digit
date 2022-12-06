@@ -31,13 +31,13 @@
   <arg name="GAZEBO" default="false"/>
   <arg name="KEYBOARD" default="true" />
 
-
+  <!--
   <arg name="DIGIT" default="false" />
     <include file="$(find digit)/launch/digit.launch"
            if="$(arg DIGIT)">
     <arg name="VISUALIZE" value="true"/>
   </include>
-
+  -->
   <!-- Use the joint_state_publisher for *commanded* joint angles. -->
   <arg name="JSP_GUI" default="false"/>
     <!-- NOTE: The joint_state_publisher is actually commanding *desired* joint
