@@ -5,7 +5,7 @@
   -->
   
   <arg name="NUM" default="0"/>
-  <arg name="SERIAL" default="D20387"/>
+  <arg name="SERIAL" default="D20396"/>
   <!-- Visualization with openCV, only if arg VISUALIZE is set to true. Default is
        false, the allegro_viz.launch can be started separated. -->
   <arg name ="VISUALIZE" default="true" />
@@ -14,7 +14,7 @@
   <arg name="SCALE" default="1.0" />
   <arg name="MMPP" default="0.0487334006" />
   <arg name="COMPRESS" default="false" />
-  <arg name="PCA" default="false" />
+  <arg name="PCA" default="true" />
 
   <!-- Allegro Hand controller and communication node. -->
   <node name="digit_$(arg NUM)"
