@@ -27,17 +27,17 @@
   <arg name="NUM" default="0"/>
 
   <include file="$(find digit)/launch/digit.launch">
-     <arg name="VISUALIZE" value="false"/>
+     <arg name="VISUALIZE" value="true"/>
      <arg name="NUM" default="0"/>
      <arg name="SERIAL" default="D20396"/>
-     <arg name="DEPTH" value="true"/>
+     <arg name="DEPTH" value="false"/>
   </include>
  
-  <include file="$(find digit)/launch/digit.launch">
+  <!-- <include file="$(find digit)/launch/digit.launch">
   <arg name="VISUALIZE" value="false"/>
   <arg name="NUM" default="1"/>
   <arg name="SERIAL" default="D20580"/>
-  </include>
+  </include> -->
 
 
   <!-- ls -l /dev/pcan* to see your open CAN ports. Auto means find it

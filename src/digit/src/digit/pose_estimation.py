@@ -79,17 +79,17 @@ class Pose:
 
     def get_pose(self, diff, frame):
         self.diff = np.abs(diff).sum(axis=2)
-        thresh = 30
+        thresh = 25
         # print("diff mean max", self.diff.mean(), self.diff.max())
 
-        mask = self.diff > thresh
-        cv2.imshow("mask", mask.astype(np.uint8) * 255)
+        mask = (self.diff > thresh).astype(np.uint8)
+        cv2.imshow("mask", mask * 255)
         # Display the resulting frame
         coors = np.where(mask == 1)
         X = coors[1].reshape(-1, 1)
         y = coors[0].reshape(-1, 1)
 
-        if len(X) > 10:
+        if len(X) > 50:
             pts = np.concatenate([X, y], axis=1)
             v_max, v_min, w_max, w_min = self.PCA(pts)
             if v_max[1] < 0:
@@ -106,7 +106,7 @@ class Pose:
             ).item()
             theta = acos(v_max[0] / (v_max[0] ** 2 + v_max[1] ** 2) ** 0.5)
             return (
-                mask.mean(),
+                self.diff.mean(),
                 rho / np.hypot(frame.shape[0], frame.shape[1]),
                 theta / np.pi,
             )
@@ -115,7 +115,7 @@ class Pose:
             self.pose = None
             self.frame = frame
             return (
-                0.0,
+                self.diff.mean(),
                 0.0,
                 0.5,
             )

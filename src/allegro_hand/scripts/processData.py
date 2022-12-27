@@ -1,12 +1,12 @@
 import os
-from math import acos, pi
 
 import cv2
 import numpy as np
 import pytact
 import torch
-from numpy import linalg as LA
 from sklearn.model_selection import train_test_split
+
+from digit.pose_estimation import Pose
 
 
 class DynamicsModel(torch.nn.Module):
@@ -25,14 +25,21 @@ class DynamicsModel(torch.nn.Module):
         self.mean.requires_grad = False
         self.std.requires_grad = False
 
-        self.fc1 = torch.nn.Linear(self.mean.shape[0], hidden_size)
+        self.up1 = torch.nn.Linear(self.mean.shape[0] - 22, 22)
+        self.up2 = torch.nn.Linear(22, 22)
+
+        self.fc1 = torch.nn.Linear(22 * 2, hidden_size)  # state should have dim 22
         self.fc2 = torch.nn.Linear(hidden_size, hidden_size)
         self.fc3 = torch.nn.Linear(hidden_size, hidden_size)
         self.fc4 = torch.nn.Linear(hidden_size, 4)
         self.drop = torch.nn.Dropout(p=dropout_p)
 
-    def forward(self, x):
-        x = (x - self.mean) / self.std
+    def forward(self, state, action):
+        action = (action - self.mean[22:]) / self.std[22:]
+        action = self.activation(self.up1(action))
+        action = self.up2(action)
+
+        x = torch.cat([(state - self.mean[:22]) / self.std[:22], action], dim=1)
         x = self.activation(self.fc1(x))
         x = self.drop(x)
         x = self.activation(self.fc2(x))
@@ -41,7 +48,7 @@ class DynamicsModel(torch.nn.Module):
         x = self.drop(x)
         x = self.fc4(x)
         return torch.cat(
-            [x[:, 0:2], torch.atan(x[:, 2] / x[:, 3]).reshape(-1, 1) + pi / 2], dim=1
+            [x[:, 0:2], torch.atan(x[:, 2] / x[:, 3]).reshape(-1, 1) + np.pi / 2], dim=1
         )
 
     def setOutputNorm(self, normMultiplier):
@@ -49,124 +56,6 @@ class DynamicsModel(torch.nn.Module):
 
     def predict(self, x):
         return self.forward(x) * self.outputNorm
-
-
-class Pose:
-    def __init__(self):
-        self.pose = None
-        self.area = 0
-        self.depth = None
-
-    def PCA(self, pts):
-        pts = pts.reshape(-1, 2).astype(np.float64)
-        mv = np.mean(pts, 0).reshape(2, 1)
-        pts -= mv.T
-        w, v = LA.eig(np.dot(pts.T, pts))
-        w_max = np.max(w)
-        w_min = np.min(w)
-
-        col = np.where(w == w_max)[0]
-        if len(col) > 1:
-            col = col[-1]
-        V_max = v[:, col]
-
-        col_min = np.where(w == w_min)[0]
-        if len(col_min) > 1:
-            col_min = col_min[-1]
-        V_min = v[:, col_min]
-
-        return V_max, V_min, w_max, w_min
-
-    def draw_ellipse(self, frame, pose):
-        v_max, v_min, w_max, w_min, m = pose
-        lineThickness = 2
-        K = 1
-
-        w_max = w_max**0.5 / 20 * K
-        w_min = w_min**0.5 / 30 * K
-
-        v_max = v_max.reshape(-1) * w_max
-        v_min = v_min.reshape(-1) * w_min
-
-        m1 = m - v_min
-        mv = m + v_min
-        self.frame = cv2.line(
-            frame,
-            (int(m1[0]), int(m1[1])),
-            (int(mv[0]), int(mv[1])),
-            (0, 255, 0),
-            lineThickness,
-        )
-
-        m1 = m - v_max
-        mv = m + v_max
-
-        self.frame = cv2.line(
-            self.frame,
-            (int(m1[0]), int(m1[1])),
-            (int(mv[0]), int(mv[1])),
-            (0, 0, 255),
-            lineThickness,
-        )
-
-        theta = acos(v_max[0] / (v_max[0] ** 2 + v_max[1] ** 2) ** 0.5)
-        length_max = w_max
-        length_min = w_min
-        axis = (int(length_max), int(length_min))
-
-        self.frame = cv2.ellipse(
-            self.frame,
-            (int(m[0]), int(m[1])),
-            axis,
-            theta / pi * 180,
-            0,
-            360,
-            (255, 255, 255),
-            lineThickness,
-        )
-
-    def get_pose(self, depth, frame):
-        self.depth = depth.copy()
-        thresh = max(0.00003, depth.max() / 2)
-
-        mask = depth > thresh
-        # Display the resulting frame
-        coors = np.where(mask == 1)
-        X = coors[1].reshape(-1, 1)
-        y = coors[0].reshape(-1, 1)
-
-        self.area = 0
-        if len(X) > 10:
-            pts = np.concatenate([X, y], axis=1)
-            v_max, v_min, w_max, w_min = self.PCA(pts)
-            if v_max[1] < 0:
-                v_max *= -1
-            m = np.mean(pts, 0).reshape(-1)
-
-            # Record pose estimation
-            self.pose = (v_max, v_min, w_max, w_min, m)
-            self.area = len(X)
-
-            self.draw_ellipse(frame, self.pose)
-            rho = (
-                (v_max[0] * m[1] - v_max[1] * m[0])
-                / (v_max[0] ** 2 + v_max[1] ** 2) ** 0.5
-            ).item()
-            theta = acos(v_max[0] / (v_max[0] ** 2 + v_max[1] ** 2) ** 0.5)
-            return (
-                depth.mean() / 0.3,
-                rho / np.hypot(frame.shape[0], frame.shape[1]),
-                theta / np.pi,
-            )
-        else:
-            # No contact
-            self.pose = None
-            self.frame = frame
-            return (
-                0.0,
-                0.0,
-                0.5,
-            )
 
 
 def getPose(j, folder, lookupTable, reference, id):
@@ -308,14 +197,14 @@ if __name__ == "__main__":
         for epoch in range(n_epochs):
             for batch in train_loader:
                 optimizer.zero_grad()
-                output = model(batch[0])
+                output = model(batch[0][:, :22], batch[0][:, 22:])
                 loss = loss_fn(output, batch[1])
                 loss.backward()
                 optimizer.step()
                 print("Epoch: {}, Train Loss: {}".format(epoch, loss.item()))
             with torch.no_grad():
                 model.eval()
-                output = model(test_input)
+                output = model(test_input[:, :22], test_input[:, 22:])
                 loss = loss_fn(output, test_output)
                 print("Epoch: {}, Test Loss: {}".format(epoch, loss.item()))
         torch.save(model, os.path.join("data", "dynamics_model.pth"))

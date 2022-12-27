@@ -8,7 +8,6 @@ thumbIK = IKSolver("dummy", "link_15_tip")
 indexIK = IKSolver("dummy", "link_3_tip")
 indexfk = FKSolver("dummy", "link_3_tip")
 
-thumbMotionWidth = 0.2
 # indexMotionWidth = 0.03
 indexLower = [0.01, -0.02, -0.005]
 indexUpper = [0.04, 0.02, 0.03]
@@ -17,11 +16,12 @@ rotIndexToThumb = Transform([0.225, 0.45, 3.14])
 indexTolerance = (0.001, 0.001, 0.001, 0.3, 0.2, 0.4)
 thumbJointMin = (0.92, -0.38, 0.0, -0.0)
 thumbJointMax = (1.12, 0.616, 1.0, 0.7)
+qIndexInit = np.zeros(4)  # TODO: Find a better initial guess
 
 
 def sampleActionSingle(numSamples, thumbJointPose, trials=2000):
-    global thumbFK, thumbIK, indexIK, thumbMotionWidth, indexLower, indexUpper
-    thumbPos = thumbFK.solve(thumbJointPose)
+    global thumbFK, thumbIK, indexIK, indexLower, indexUpper, thumbJointMax, thumbJointMin
+    # thumbPos = thumbFK.solve(thumbJointPose)
     samples = []
     for _ in range(numSamples):
         i = 0
@@ -32,12 +32,10 @@ def sampleActionSingle(numSamples, thumbJointPose, trials=2000):
                 np.random.uniform(thumbJointMin[2], thumbJointMax[2]),
                 np.random.uniform(thumbJointMin[3], thumbJointMax[3]),
             ]
-            sampledThumbJointPose[:2] = thumbJointPose[:2]
+            sampledThumbPose = thumbFK.solve(sampledThumbJointPose)
             # print(
             #     "Thumb joint pose and new pose", thumbJointPose, sampledThumbJointPose
             # )
-            # sampledThumbJointPose = thumbJointPose
-            sampledThumbPose = thumbFK.solve(sampledThumbJointPose)
             # print("Thumb pos and new pos", thumbPos, sampledThumbPose)
 
             u = np.random.uniform(indexLower[0], indexUpper[0])
@@ -52,10 +50,10 @@ def sampleActionSingle(numSamples, thumbJointPose, trials=2000):
             )
             # print("Sampled index pos", sampledIndexPose)
             sampledIndexJointPose = indexIK.solve(
-                sampledIndexPose, indexTolerance, np.zeros(4)
+                sampledIndexPose, indexTolerance, qIndexInit
             )
             if sampledIndexJointPose is not None:
-                obtainedIndexPos = indexfk.solve(sampledIndexJointPose)
+                # obtainedIndexPos = indexfk.solve(sampledIndexJointPose)
                 # print("Obtained index pos", obtainedIndexPos)
                 samples.append(
                     np.hstack((sampledIndexJointPose, sampledThumbJointPose))
@@ -67,7 +65,7 @@ def sampleActionSingle(numSamples, thumbJointPose, trials=2000):
     return np.vstack(samples)
 
 
-def sampleActionParallel(numSamples, thumbJointPose, numProcesses=6):
+def sampleActionParallel(numSamples, thumbJointPose, numProcesses=4):
     p = Pool(numProcesses)
     subSampleSize = int(numSamples / numProcesses + 0.5)
     results_objects = []

@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
 import os
-from datetime import datetime
 
 import cv2
 import numpy as np
 import rospy
-from actionSampler_pitch import sampleAction
+import torch
+
+from allegro_hand.scripts.actionSampler import sampleActionSingle, sampleActionParallel
 from cv_bridge import CvBridge
+
 from Kinematics import FKSolver
+from processData import DynamicsModel
 from rospy.numpy_msg import numpy_msg
+from scipy.spatial.transform import Rotation as R
 from sensor_msgs.msg import Image, JointState
 
 from digit.msg import Floats
-from scipy.spatial.transform import Rotation as R
 
 JointStateTopic = "/allegroHand_0/joint_states"
 JointCommandTopic = "/allegroHand_0/joint_cmd"
@@ -90,18 +93,6 @@ indexFK = FKSolver("dummy", "link_3_tip")
 def jointStateCallback(msg):
     global currentJointPose, currentJointTorque, thumbFK, indexFK
     currentJointPose = msg.position
-    # trans = thumbFK.solve([1.136, 0.17, 0.46, 0.024]).inverse() * indexFK.solve(
-    #     currentJointPose[:4]
-    # )
-    # trans = thumbFK.solve(currentJointPose[-4:]).inverse() * indexFK.solve(
-    #     currentJointPose[:4]
-    # )
-    # print(
-    #     R.from_quat([trans.rot[1], trans.rot[2], trans.rot[3], trans.rot[0]]).as_euler(
-    #         "xyz", degrees=False
-    #     )
-    # )
-    print(currentJointPose[:4], currentJointPose[-4:])
     currentJointTorque = msg.effort
 
 
@@ -125,19 +116,53 @@ def DigitDepthCallback1(msg):
     digitDepthImage1 = msg.data.reshape((320, 240))
 
 
+def evolveActions(
+    model, actions, pose0, pose1, poseDesired0, prevJointPose, prevJointTorque
+):
+    actions = torch.from_numpy(actions).float().cuda()
+    actions.requires_grad = True
+    states = (
+        torch.from_numpy(np.concatenate((prevJointPose, prevJointTorque, pose0, pose1)))
+        .float()
+        .cuda()
+        .reshape(1, 22)
+    )
+    states = torch.tile(states, (actions.shape[0], 1))
+    poseDesired0 = torch.from_numpy(poseDesired0).float().cuda().reshape(1, 3)
+    poseDesired0 = torch.tile(poseDesired0, (actions.shape[0], 1))
+    optimizer = torch.optim.Adam([actions], lr=0.01)
+    model = model.eval()
+    optimize_steps = 100
+    for _ in range(optimize_steps):
+        optimizer.zero_grad()
+        outputs = model(states, actions)
+        loss = torch.pow(outputs - poseDesired0, 2).mean(dim=1)
+        print("Min loss is: ", loss.min().item(), "Max loss is: ", loss.max().item())
+        loss.mean().backward()
+        optimizer.step()
+    with torch.no_grad():
+        outputs = model(states, actions)
+        loss = torch.pow(outputs - poseDesired0, 2).mean(dim=1)
+        action = actions[torch.where(loss == loss.min()), :].detach().cpu().numpy()
+    return action, loss.min().item()
+
+
 if __name__ == "__main__":
     depthRange = 0.004
     depthContactThs = 0.001
-    samplingAmount = 10000
 
-    if not os.path.exists("data"):
-        os.makedirs("data")
-    data_folder = os.path.join("data", datetime.now().strftime("%d-%H:%M:%S"))
-    os.makedirs(data_folder)
-
-    rospy.init_node("collect_data")
-    rospy.loginfo("Collecting data...")
-    rospy.loginfo("Press Ctrl+C to stop.")
+    model_path = os.path.join("data", "dynamics_model.pth")
+    model = torch.load(model_path)
+    actions = sampleActionParallel(128, np.array([1.16565, 0.1846, 0.269, -0.007]))
+    action, loss_pred = evolveActions(
+        model,
+        np.hstack((actions[:,:4], actions[:,-2:])),
+        np.zeros(3),
+        np.zeros(3),
+        np.zeros(3),
+        np.zeros(8),
+        np.zeros(8),
+    )
 
     jointStateSub = rospy.Subscriber(JointStateTopic, JointState, jointStateCallback)
     DigitSub0 = rospy.Subscriber(DigitTopic0, Image, DigitCallback0)
@@ -154,7 +179,7 @@ if __name__ == "__main__":
 
     jointStateMsg = JointState()
 
-    for i in range(samplingAmount):
+    while True:
         cv2.imshow("Digit0", digitImage0)
         cv2.imshow("DigitDepth 0", digitDepthImage0 / depthRange)
         key = cv2.waitKey()
@@ -165,12 +190,10 @@ if __name__ == "__main__":
             jointStateMsg.position = InitialGraspPose
             newPose = np.array(InitialGraspPose)
             jointCommandPub.publish(jointStateMsg)
-            i -= 1
         elif key == ord("h"):
             jointStateMsg.header.stamp = rospy.Time.now()
             jointStateMsg.position = HomePose
             jointCommandPub.publish(jointStateMsg)
-            i -= 1
         elif key == ord("j"):
             # print(
             #     "Current joint pose: ",
@@ -180,7 +203,7 @@ if __name__ == "__main__":
             # )
             jointStateMsg.header.stamp = rospy.Time.now()
             # sample = sampleAction(1, [1.136, 0.17, 0.46, 0.024])
-            sample = sampleAction(1, currentJointPose[-4:])
+            samples = sampleActionParallel(128, currentJointPose[-4:])
             print("sample is ", sample)
             newPose[:4] = sample[0, :4].flatten()
             newPose[-4:-1] = sample[0, -4:-1].flatten()
