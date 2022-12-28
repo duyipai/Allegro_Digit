@@ -11,8 +11,7 @@
           CAN_DEVICE:=/dev/pcanusb1 | /dev/pcanusbNNN  (ls -l /dev/pcan* to see open CAN devices)
           VISUALIZE:=true|false  (Launch rviz)
           JSP_GUI:=true|false  (If true, start a joint_state_publisher for commanded joint angles).
-          GAZEBO:=true|false  (NOTE: Gazebo support is highly experimental at this point)
-
+  
        This script launches the following nodes:
          - allegro hand controller (different controllers exist)
          - state publisher (for TF information)
@@ -28,8 +27,8 @@
        as an input for both the robot_description and for the grasping library controllers. -->
   <arg name="HAND" default="right"/>
   <arg name="NUM" default="0"/>
-  <arg name="GAZEBO" default="false"/>
   <arg name="KEYBOARD" default="true" />
+  <arg name="SIM" default="true"/>
 
   <!--
   <arg name="DIGIT" default="false" />
@@ -81,7 +80,8 @@
         output="screen"
         clear_params="true"
         respawn="$(arg RESPAWN)"
-        respawn_delay="2">
+        respawn_delay="2"
+        args="$(arg SIM)" >
 
     <!-- Remapping of topics into enumerated allegroHand_# namespace -->
     <remap from="allegroHand/joint_states" to="allegroHand_$(arg NUM)/joint_states"/>

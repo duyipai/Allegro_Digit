@@ -25,9 +25,10 @@
        as an input for both the robot_description and for the grasping library controllers. -->
   <arg name="HAND" default="right"/>
   <arg name="NUM" default="0"/>
+  <arg name="SIM" default="false"/>
 
   <include file="$(find digit)/launch/digit.launch">
-     <arg name="VISUALIZE" value="true"/>
+     <arg name="VISUALIZE" value="false"/>
      <arg name="NUM" default="0"/>
      <arg name="SERIAL" default="D20396"/>
      <arg name="DEPTH" value="false"/>
@@ -66,7 +67,8 @@
         output="screen"
         clear_params="true"
         respawn="$(arg RESPAWN)"
-        respawn_delay="2">
+        respawn_delay="2"
+        args="$(arg SIM)" >
 
     <!-- Remapping of topics into enumerated allegroHand_# namespace -->
     <remap from="allegroHand/joint_states" to="allegroHand_$(arg NUM)/joint_states"/>
@@ -98,5 +100,13 @@
     <remap from="tf" to="allegroHand_$(arg NUM)/tf"/>
     <remap from="joint_states" to="allegroHand_$(arg NUM)/joint_states"/>
   </node>
+
+  <!-- Visualization with rviz, only if arg VISUALIZE is set to true. Default is
+       false, the allegro_viz.launch can be started separated. -->
+  <arg name ="VISUALIZE" default="true" />
+  <include file="$(find allegro_hand_controllers)/launch/allegro_viz.launch"
+           if="$(arg VISUALIZE)">
+    <arg name="NUM" value="$(arg NUM)"/>
+  </include>
 
 </launch>

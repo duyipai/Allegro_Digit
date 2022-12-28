@@ -176,9 +176,9 @@ void AllegroNodePD::doIt() {
   }
 }
 
-int main(int argc, char **argv) {
-  ros::init(argc, argv, "allegro_hand_pd_controller");
-  AllegroNodePD allegroNode;
+// int main(int argc, char **argv) {
+//   ros::init(argc, argv, "allegro_hand_pd_controller");
+//   AllegroNodePD allegroNode;
 
-  allegroNode.doIt();
-}
+//   allegroNode.doIt();
+// }

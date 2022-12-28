@@ -6,11 +6,11 @@ import cv2
 import numpy as np
 import rospy
 from cv_bridge import CvBridge
-from Kinematics import FKSolver
+from allegro_hand.Kinematics import FKSolver
 from scipy.spatial.transform import Rotation as R
 from sensor_msgs.msg import Image, JointState
 
-from allegro_hand.scripts.actionSampler import sampleActionParallel
+from allegro_hand.actionSampler import sampleActionParallel
 
 JointStateTopic = "/allegroHand_0/joint_states"
 JointCommandTopic = "/allegroHand_0/joint_cmd"
@@ -18,26 +18,6 @@ DigitTopic0 = "digit_sensor/0/raw"
 digitImage0 = np.zeros((320, 240), dtype=np.uint8)
 currentJointPose = None
 currentJointTorque = None
-InitialGraspPose = np.array(
-    [
-        0.0,
-        -0.17453292519,
-        0.78539816339,
-        0.78539816339,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        1.2,
-        0.1511395985137535,
-        0.5,
-        0.0900086861635857,
-    ]
-)
 InitialGraspPose = [
     0.22,
     1.65,
@@ -51,11 +31,11 @@ InitialGraspPose = [
     0.0,
     0.0,
     0.0,
-    1.084,
-    0.151,
-    0.58,
-    -0.1,
-] # TODO: change the thumb initial to be the middle of the sampling space, change seed to be index initial
+    1.05,
+    0.1,
+    0.3,
+    0.1,
+]  # TODO: change the thumb initial to be the middle of the sampling space, change seed to be index initial
 HomePose = [
     0.0,
     -0.17453292519,
@@ -86,22 +66,28 @@ def jointStateCallback(msg):
     # trans = thumbFK.solve([1.136, 0.17, 0.46, 0.024]).inverse() * indexFK.solve(
     #     currentJointPose[:4]
     # )
-    trans = thumbFK.solve(currentJointPose[-4:]).inverse() * indexFK.solve(
-        currentJointPose[:4]
-    )
-    print(
-        R.from_quat([trans.rot[1], trans.rot[2], trans.rot[3], trans.rot[0]]).as_euler(
-            "xyz", degrees=False
-        ),
-        trans.pos,
-    )
-    trans = thumbFK.solve(newPose[-4:]).inverse() * indexFK.solve(newPose[:4])
+    # trans = thumbFK.solve(currentJointPose[-4:]).inverse() * indexFK.solve(
+    #     currentJointPose[:4]  # transformation from index frame to thumb frame
+    # )
+    # print(
+    #     R.from_quat([trans.rot[1], trans.rot[2], trans.rot[3], trans.rot[0]]).as_euler(
+    #         "xyz", degrees=False
+    #     ),
+    #     trans.pos,
+    # )
+    # trans = thumbFK.solve(newPose[-4:]).inverse() * indexFK.solve(newPose[:4])
     # print("Should be ",
     #     R.from_quat([trans.rot[1], trans.rot[2], trans.rot[3], trans.rot[0]]).as_euler(
     #         "xyz", degrees=False
     #     ), trans.pos
     # )
-    # print("Joints: ", currentJointPose[:4], currentJointPose[-4:], newPose[:4], newPose[-4:])
+    print(
+        "Joints: ",
+        currentJointPose[:4],
+        currentJointPose[-4:],
+        # newPose[:4],
+        # newPose[-4:],
+    )
     # rospy.sleep(0.2)
     currentJointTorque = msg.effort
 
@@ -129,8 +115,10 @@ if __name__ == "__main__":
 
     jointStateMsg = JointState()
     save_count = 0
+    # rospy.spin()
     while True:
-        key = cv2.waitKey(10)
+        cv2.imshow("digit0", digitImage0)
+        key = cv2.waitKey(1)
         if key == ord("q"):
             break
         elif key == ord("g"):
@@ -153,16 +141,43 @@ if __name__ == "__main__":
             prev_Digit0 = digitImage0.copy()
             prev_JointPose = np.array(currentJointPose)
             prev_JointTorque = np.array(currentJointTorque)
-            sample = sampleActionParallel(4, currentJointPose[-4:])
+            print("Doing sampling...")
+            sample = sampleActionParallel(2, currentJointPose[-4:])[0, :]
+            sample[-4] = InitialGraspPose[-4]
+            sample_should_be = sample.copy()
+            sample_should_be[-4] = currentJointPose[-4]
+            trans = thumbFK.solve(sample_should_be[-4:]).inverse() * indexFK.solve(
+                sample_should_be[:4]  # transformation from index frame to thumb frame
+            )
+            print(
+                "sampled goes to ",
+                R.from_quat(
+                    [trans.rot[1], trans.rot[2], trans.rot[3], trans.rot[0]]
+                ).as_euler("xyz", degrees=False),
+                trans.pos,
+            )
             jointStateMsg.header.stamp = rospy.Time.now()
             if sample.shape[0] == 0:
+                print("No valid sample found, going home...")
                 jointStateMsg.position = HomePose
                 jointCommandPub.publish(jointStateMsg)
             else:
-                newPose[:4] = sample[0, :4].flatten()
-                newPose[-4:] = sample[0, -4:].flatten()
+                print("Obtained num of samples: ", sample.shape[0])
+                newPose[:4] = sample[:4].flatten()
+                newPose[-3:] = sample[-3:].flatten()
                 jointStateMsg.position = newPose
                 jointCommandPub.publish(jointStateMsg)
+            rospy.sleep(1.0)
+            trans = thumbFK.solve(currentJointPose[-4:]).inverse() * indexFK.solve(
+                currentJointPose[:4]  # transformation from index frame to thumb frame
+            )
+            print(
+                "sampled in reality ",
+                R.from_quat(
+                    [trans.rot[1], trans.rot[2], trans.rot[3], trans.rot[0]]
+                ).as_euler("xyz", degrees=False),
+                trans.pos,
+            )
         elif key == ord("s"):
             cv2.imwrite(
                 os.path.join(data_folder, str(save_count) + "_prev_Digit0.png"),

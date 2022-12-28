@@ -79,11 +79,11 @@ class Pose:
 
     def get_pose(self, diff, frame):
         self.diff = np.abs(diff).sum(axis=2)
-        thresh = 25
+        thresh = 30
         # print("diff mean max", self.diff.mean(), self.diff.max())
 
         mask = (self.diff > thresh).astype(np.uint8)
-        cv2.imshow("mask", mask * 255)
+        # cv2.imshow("mask", mask * 255)
         # Display the resulting frame
         coors = np.where(mask == 1)
         X = coors[1].reshape(-1, 1)

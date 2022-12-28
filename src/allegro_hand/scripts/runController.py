@@ -6,10 +6,10 @@ import numpy as np
 import rospy
 import torch
 
-from allegro_hand.scripts.actionSampler import sampleActionSingle, sampleActionParallel
+from allegro_hand.actionSampler import sampleActionSingle, sampleActionParallel
 from cv_bridge import CvBridge
 
-from Kinematics import FKSolver
+from allegro_hand.Kinematics import FKSolver
 from processData import DynamicsModel
 from rospy.numpy_msg import numpy_msg
 from scipy.spatial.transform import Rotation as R
