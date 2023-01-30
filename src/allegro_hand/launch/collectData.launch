@@ -32,6 +32,7 @@
      <arg name="NUM" default="0"/>
      <arg name="SERIAL" default="D20396"/>
      <arg name="DEPTH" value="false"/>
+     <arg name="PCA" value="true"/>
   </include>
  
   <!-- <include file="$(find digit)/launch/digit.launch">

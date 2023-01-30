@@ -175,10 +175,3 @@ void AllegroNodePD::doIt() {
     ros::spinOnce();
   }
 }
-
-// int main(int argc, char **argv) {
-//   ros::init(argc, argv, "allegro_hand_pd_controller");
-//   AllegroNodePD allegroNode;
-
-//   allegroNode.doIt();
-// }

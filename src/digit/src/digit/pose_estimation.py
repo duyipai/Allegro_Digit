@@ -78,8 +78,8 @@ class Pose:
         )
 
     def get_pose(self, diff, frame):
-        self.diff = np.abs(diff).sum(axis=2)
-        thresh = 30
+        self.diff = np.abs(diff).mean(axis=2)
+        thresh = 12
         # print("diff mean max", self.diff.mean(), self.diff.max())
 
         mask = (self.diff > thresh).astype(np.uint8)
@@ -100,14 +100,11 @@ class Pose:
             self.pose = (v_max, v_min, w_max, w_min, m)
 
             self.draw_ellipse(frame, self.pose)
-            rho = (
-                (v_max[0] * m[1] - v_max[1] * m[0])
-                / (v_max[0] ** 2 + v_max[1] ** 2) ** 0.5
-            ).item()
             theta = acos(v_max[0] / (v_max[0] ** 2 + v_max[1] ** 2) ** 0.5)
             return (
                 self.diff.mean(),
-                rho / np.hypot(frame.shape[0], frame.shape[1]),
+                m[0] / frame.shape[1],
+                m[1] / frame.shape[0],
                 theta / np.pi,
             )
         else:
@@ -116,6 +113,7 @@ class Pose:
             self.frame = frame
             return (
                 self.diff.mean(),
-                0.0,
+                0.5,
+                0.5,
                 0.5,
             )

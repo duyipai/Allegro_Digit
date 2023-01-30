@@ -36,6 +36,7 @@ class frameMedianFilter:
 RAW_TOPIC = "digit_sensor/raw"
 DIFF_TOPIC = "digit_sensor/diff"
 DEPTH_TOPIC = "digit_sensor/depth"
+POSE_TOPIC = "digit_sensor/pose"
 
 if __name__ == "__main__":
     rospy.init_node("digit_sensor_pub")
@@ -76,9 +77,13 @@ if __name__ == "__main__":
         DIFF_TOPIC += "/compressed"
         raw_pub = rospy.Publisher(RAW_TOPIC, CompressedImage, queue_size=1)
         diff_pub = rospy.Publisher(DIFF_TOPIC, CompressedImage, queue_size=1)
+        if do_pca:
+            pose_pub = rospy.Publisher(POSE_TOPIC, CompressedImage, queue_size=1)
     else:
         raw_pub = rospy.Publisher(RAW_TOPIC, Image, queue_size=1)
         diff_pub = rospy.Publisher(DIFF_TOPIC, Image, queue_size=1)
+        if do_pca:
+            pose_pub = rospy.Publisher(POSE_TOPIC, Image, queue_size=1)
     if calculate_depth:
         depth_pub = rospy.Publisher(DEPTH_TOPIC, numpy_msg(Floats), queue_size=1)
         depth_range = 0.003
@@ -96,6 +101,13 @@ if __name__ == "__main__":
         frame = median_filter(sensor.get_frame())
         if frame is not None:
             f = frame.image
+            raw_msg = (
+                bridge.cv2_to_compressed_imgmsg(f, dst_format="jpg")
+                if use_compressed
+                else bridge.cv2_to_imgmsg(f, encoding="passthrough")
+            )
+            raw_pub.publish(raw_msg)
+
             diff = sensor.preprocess_for(lookupTable.model.model_type, frame)
             diff_msg = np.abs(diff.image).astype(np.uint8)
             diff_msg = (
@@ -111,20 +123,25 @@ if __name__ == "__main__":
                 depth.data = -depth.data
 
                 depth_pub.publish(depth.data.astype(np.float32).flatten())
-
+            mask = (np.abs(diff.image).mean(axis=2) > 12).astype(np.uint8) * 255
             if do_pca:
-                print(pose_estimator.get_pose(diff.image, frame.image))
-                f = pose_estimator.frame
-
-            raw_msg = (
-                bridge.cv2_to_compressed_imgmsg(f, dst_format="jpg")
-                if use_compressed
-                else bridge.cv2_to_imgmsg(f, encoding="passthrough")
-            )
-            raw_pub.publish(raw_msg)
+                print(pose_estimator.get_pose(diff.image, f.copy()))
+                pose_msg = (
+                    bridge.cv2_to_compressed_imgmsg(
+                        pose_estimator.frame, dst_format="jpg"
+                    )
+                    if use_compressed
+                    else bridge.cv2_to_imgmsg(
+                        pose_estimator.frame, encoding="passthrough"
+                    )
+                )
+                pose_pub.publish(pose_msg)
+                if visualize:
+                    cv2.imshow("pose", pose_estimator.frame)
 
             if visualize:
                 cv2.imshow("raw", f)
+                cv2.imshow("mask", mask)
                 cv2.imshow("diff", np.abs(diff.image).astype(np.uint8) * 3)
                 # print(
                 #     "depth min: {}, max: {}".format(depth.data.min(), depth.data.max())

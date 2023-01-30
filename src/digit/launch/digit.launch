@@ -14,7 +14,7 @@
   <arg name="SCALE" default="1.0" />
   <arg name="MMPP" default="0.0487334006" />
   <arg name="COMPRESS" default="false" />
-  <arg name="PCA" default="true" />
+  <arg name="PCA" default="false" />
 
   <!-- Allegro Hand controller and communication node. -->
   <node name="digit_$(arg NUM)"
@@ -24,8 +24,10 @@
 
     <!-- Remapping of topics into enumerated namespace -->
     <remap from="digit_sensor/raw" to="digit_sensor/$(arg NUM)/raw" unless="$(arg COMPRESS)"/>
+    <remap from="digit_sensor/pose" to="digit_sensor/$(arg NUM)/pose" unless="$(arg COMPRESS)"/>
     <remap from="digit_sensor/diff" to="digit_sensor/$(arg NUM)/diff" unless="$(arg COMPRESS)"/>
     <remap from="digit_sensor/raw/compressed" to="digit_sensor/$(arg NUM)/raw/compressed" if="$(arg COMPRESS)"/>
+    <remap from="digit_sensor/pose/compressed" to="digit_sensor/$(arg NUM)/pose/compressed" if="$(arg COMPRESS)"/>
     <remap from="digit_sensor/diff/compressed" to="digit_sensor/$(arg NUM)/diff/compressed" if="$(arg COMPRESS)"/>
     <remap from="digit_sensor/depth" to="digit_sensor/$(arg NUM)/depth"/>
 

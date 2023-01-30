@@ -27,7 +27,11 @@ def sampleActionSingle(numSamples, thumbJointPose, trials=200):
     qIndexInit = np.zeros(4)  # TODO: Find a better initial guess
     # thumbPos = thumbFK.solve(thumbJointPose)
     samples = []
+    actions = np.load("actions.npy")
+    np.random.seed(int(10 * time.time()) % 2**32)
     for _ in range(numSamples):
+        samples.append(actions[np.random.choice(np.arange(len(actions)), 1), :])
+        continue
         i = 0
         while i < trials:
             sampledThumbJointPose = [
@@ -94,10 +98,10 @@ def sampleActionParallel(numSamples, thumbJointPose, numProcesses=4):
 
 
 def isValidAction(trans):
-    indexLower = [0.01, -0.01, -0.01]
-    indexUpper = [0.035, 0.02, 0.03]
+    indexLower = [-0.005, -0.01, -0.02]
+    indexUpper = [0.02, 0.01, 0.02]
     rotIndexToThumb = [0.2, 0.225, 3.09]
-    indexTolerance = (0.3, 0.3, 0.5)
+    indexTolerance = (0.5, 0.5, 0.8)
     rot = R.from_quat(
         [
             trans.rot[1],
@@ -140,18 +144,20 @@ def singleProcess(
     thumbFK,
     indexFK,
 ):
-    for thumbThird in np.arange(thumbJointMin[2], thumbJointMax[2] + 0.05, 0.05):
-        for thumbFourth in np.arange(thumbJointMin[3], thumbJointMax[3] + 0.05, 0.05):
+    for thumbThird in np.arange(thumbJointMin[2], thumbJointMax[2] + 0.1, 0.1):
+        for thumbFourth in np.arange(thumbJointMin[3], thumbJointMax[3] + 0.1, 0.1):
             thumbJointPose = np.array(
                 [thumbFirstJointTrue, thumbSecond, thumbThird, thumbFourth]
             )
-            for indexFirst in np.arange(indexJointMin[0], indexJointMax[0], 0.05):
-                for indexSecond in np.arange(indexJointMin[1], indexJointMax[1], 0.05):
+            for indexFirst in np.arange(indexJointMin[0], indexJointMax[0] + 0.1, 0.1):
+                for indexSecond in np.arange(
+                    indexJointMin[1], indexJointMax[1] + 0.1, 0.1
+                ):
                     for indexThird in np.arange(
-                        indexJointMin[2], indexJointMax[2], 0.05
+                        indexJointMin[2], indexJointMax[2] + 0.1, 0.1
                     ):
                         for indexFourth in np.arange(
-                            indexJointMin[3], indexJointMax[3], 0.05
+                            indexJointMin[3], indexJointMax[3] + 0.1, 0.1
                         ):
                             indexJointPose = np.array(
                                 [indexFirst, indexSecond, indexThird, indexFourth]
@@ -170,7 +176,7 @@ def singleProcess(
                                         )
                                     )
                                 )
-            print("Finished one round for thumb ", thumbJointPose)
+            # print("Finished one round for thumb ", thumbJointPose)
     if len(action_list) == 0:
         return None
     else:
@@ -185,16 +191,16 @@ if __name__ == "__main__":
     indexJointMin = (0.05, 0.95, -0.27, -0.27)
     indexJointMax = (0.35, 1.65, 0.4, 0.8)
     # fake
-    indexJointMin = (-0.1, -0.1, -0.1, -0.22)
-    indexJointMax = (0.1, 0.0, 0.0, 0.0)
-    thumbJointMin = (0.9, -0.2, -0.2, -0.3)
-    thumbJointMax = (1.2, 0.2, 0.2, 0.3)
+    # indexJointMin = (-0.1, -0.1, -0.1, -0.22)
+    # indexJointMax = (0.1, 0.0, 0.0, 0.0)
+    # thumbJointMin = (0.9, -0.2, -0.2, -0.3)
+    # thumbJointMax = (1.2, 0.4, 0.2, 0.3)
     # end fake
     thumbFirstJointCommand = 1.05
-    thumbFirstJointTrue = 1.11
-    numProcesses = 6
+    thumbFirstJointTrue = 1.0
+    numProcesses = 13
 
-    thumbSeconds = np.arange(thumbJointMin[1], thumbJointMax[1] + 0.05, 0.05)
+    thumbSeconds = np.arange(thumbJointMin[1], thumbJointMax[1] + 0.1, 0.1)
     chuncks = []
     while thumbSeconds.shape[0] > numProcesses:
         chuncks.append(thumbSeconds[:numProcesses])
@@ -236,4 +242,5 @@ if __name__ == "__main__":
     print("Time used ", time.time() - t_start)
     if len(action_list) > 0:
         action_list = np.vstack(action_list)
+        print("Total number of actions ", action_list.shape[0])
         np.save("actions", action_list)
