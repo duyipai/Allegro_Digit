@@ -3,7 +3,7 @@
 Allegro Digit ROS Package
 ================================
 
-This is from the official allegro hand ros package [1].
+This is from the official allegro hand ros package [1]. Check out the manipulation branch for code of [stick manipulation](https://www.duyipai.me/assets/files/Du2024Stick.pdf).
 
 [1] https://github.com/simlabrobotics/allegro_hand_ros_v4
 
