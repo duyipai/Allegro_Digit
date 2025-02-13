@@ -32,6 +32,8 @@ Packages
 
  * packages from the official ROS repo [1].
 
+ * [pytact](https://github.com/duyipai/pytact)
+
 
 Installing the PCAN driver
 --------------------------
